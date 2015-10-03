@@ -54,13 +54,13 @@
 			}
 
 			var items = [
-				{ title: 'Add Sites', icon: 'ion-plus-round', fn: clicked },
-				{ title: 'Reset Login', icon: 'ion-person', fn: clicked },
-				{ title: 'Help', icon: 'ion-help-buoy', fn: clicked },
-				{ title: 'Disabled', icon: 'ion-minus-circled', fn: clicked, disabled: true },
-				{ title: 'Invisible', icon: 'ion-eye-disabled', fn: clicked, visible: false },
+				{ content: 'Add Sites', icon: 'ion-plus-round', fn: clicked },
+				{ content: 'Reset Login', icon: 'ion-person', fn: clicked },
+				{ content: 'Help', icon: 'ion-help-buoy', fn: clicked },
+				{ content: 'Disabled', icon: 'ion-minus-circled', fn: clicked, disabled: true },
+				{ content: 'Invisible', icon: 'ion-eye-disabled', fn: clicked, visible: false },
 				{ },
-				{ title: 'Logout', icon: 'ion-log-out', fn: clicked }
+				{ content: 'Logout', icon: 'ion-log-out', fn: clicked }
 			]
 
 			basicContext.show(e, items)

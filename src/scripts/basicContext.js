@@ -11,17 +11,13 @@ const dom = function(elem = '') {
 
 const valid = function(item = {}) {
 
-	let emptyItem = (Object.keys(item).length===0 ? true : false)
-
 	// Detect type of item
-	if (emptyItem===true) item.type = SEPARATOR
-	else                  item.type = ITEM
+	item.type = (Object.keys(item).length===0 ? SEPARATOR : ITEM)
 
 	// Set default values
 	if (item.class==null)     item.class   = ''
 	if (item.visible!==false) item.visible = true
-	if (item.icon==null)      item.icon    = null
-	if (item.title==null)     item.title   = 'Undefined'
+	if (item.content==null)   item.content = 'Undefined'
 
 	// Add disabled class when item disabled
 	if (item.disabled!==true) item.disabled = false
@@ -29,9 +25,9 @@ const valid = function(item = {}) {
 
 	// Item requires a function when
 	// it's not a separator and not disabled
-	if (item.fn==null && item.type!==SEPARATOR && item.disabled===false) {
+	if (typeof item.fn !== 'function' && item.type!==SEPARATOR && item.disabled===false) {
 
-		console.warn(`Missing fn for item '${ item.title }'`)
+		console.warn(`Missing fn for item '${ item.content }'`)
 		return false
 
 	}
@@ -42,8 +38,7 @@ const valid = function(item = {}) {
 
 const buildItem = function(item, num) {
 
-	let html = '',
-	    span = ''
+	let html = ''
 
 	// Parse and validate item
 	if (valid(item)===false) return ''
@@ -54,15 +49,12 @@ const buildItem = function(item, num) {
 	// Give item a unique number
 	item.num = num
 
-	// Generate span/icon-element
-	if (item.icon!==null) span = `<span class='basicContext__icon ${ item.icon }'></span>`
-
 	// Generate item
 	if (item.type===ITEM) {
 
 		html = `
 		       <tr class='basicContext__item ${ item.class }'>
-		           <td class='basicContext__data' data-num='${ item.num }'>${ span }${ item.title }</td>
+		           <td class='basicContext__data' data-num='${ item.num }'>${ item.content }</td>
 		       </tr>
 		       `
 
