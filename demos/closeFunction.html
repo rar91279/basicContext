@@ -52,7 +52,7 @@
 
 			var clicked = function() { alert('Item clicked!') }
 
-			var onClose = function(e) {
+			var close = function(e) {
 
 				document.querySelector('a.click.active').classList.remove('active')
 
@@ -72,7 +72,11 @@
 				{ title: 'Logout', icon: 'ion-log-out', fn: clicked }
 			]
 
-			basicContext.show(items, e, onClose)
+			var opts = {
+				close: close
+			}
+
+			basicContext.show(e, items, opts)
 
 		}
 

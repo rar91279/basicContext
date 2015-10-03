@@ -13,8 +13,11 @@ const valid = function(item = {}) {
 
 	let emptyItem = (Object.keys(item).length===0 ? true : false)
 
-	if (emptyItem===true)     item.type    = SEPARATOR
-	if (item.type==null)      item.type    = ITEM
+	// Detect type of item
+	if (emptyItem===true) item.type = SEPARATOR
+	else                  item.type = ITEM
+
+	// Set default values
 	if (item.class==null)     item.class   = ''
 	if (item.visible!==false) item.visible = true
 	if (item.icon==null)      item.icon    = null
@@ -75,7 +78,7 @@ const buildItem = function(item, num) {
 
 }
 
-const build = function(items) {
+const build = function(items = []) {
 
 	let html = ''
 
@@ -99,7 +102,7 @@ const build = function(items) {
 
 }
 
-const getNormalizedEvent = function(e = {}) {
+const getNormalizedPosition = function(e = {}) {
 
 	let pos = {
 		x : e.clientX,
@@ -113,7 +116,7 @@ const getNormalizedEvent = function(e = {}) {
 
 		let touches = e.changedTouches
 
-		if (touches!=null&&touches.length>0) {
+		if (touches!=null && touches.length>0) {
 			pos.x = touches[0].clientX
 			pos.y = touches[0].clientY
 		}
@@ -128,14 +131,11 @@ const getNormalizedEvent = function(e = {}) {
 
 }
 
-const getPosition = function(e, context) {
-
-	// Get the click position
-	let normalizedEvent = getNormalizedEvent(e)
+const getPosition = function(normalizedPosition, context) {
 
 	// Set the initial position
-	let x = normalizedEvent.x,
-	    y = normalizedEvent.y
+	let x = normalizedPosition.x,
+	    y = normalizedPosition.y
 
 	// Get size of browser
 	let browserSize = {
@@ -161,8 +161,8 @@ const getPosition = function(e, context) {
 	}
 
 	// Calculate the relative position of the mouse to the context
-	let rx = normalizedEvent.x - x,
-	    ry = normalizedEvent.y - y
+	let rx = normalizedPosition.x - x,
+	    ry = normalizedPosition.y - y
 
 	return { x, y, rx, ry }
 
@@ -181,7 +181,16 @@ const bind = function(item = {}) {
 
 }
 
-const show = function(items, e, fnClose, fnCallback) {
+const setStyles = function(position, context) {
+
+	context.style.left            = `${ position.x }px`
+	context.style.top             = `${ position.y }px`
+	context.style.transformOrigin = `${ position.rx }px ${ position.ry }px`
+	context.style.opacity         = 1
+
+}
+
+const show = function(e, items, opts = {}) {
 
 	// Build context
 	let html = build(items)
@@ -198,21 +207,19 @@ const show = function(items, e, fnClose, fnCallback) {
 	// Cache the context
 	let context = dom()
 
+	// Get the normalized click position
+	let normalizedPosition = getNormalizedPosition(e)
+
 	// Calculate position
-	let position = getPosition(e, context)
+	let position = getPosition(normalizedPosition, context)
 
-	// Set position
-	context.style.left            = `${ position.x }px`
-	context.style.top             = `${ position.y }px`
-	context.style.transformOrigin = `${ position.rx }px ${ position.ry }px`
-	context.style.opacity         = 1
-
-	// Close fn fallback
-	if (fnClose==null) fnClose = close
+	// Set styles and position
+	if (typeof opts.show === 'function') opts.show(position, context)
+	else                                 setStyles(position, context)
 
 	// Bind click on background
-	context.parentElement.onclick       = fnClose
-	context.parentElement.oncontextmenu = fnClose
+	context.parentElement.onclick       = (typeof opts.close === 'function' ? opts.close : close)
+	context.parentElement.oncontextmenu = (typeof opts.close === 'function' ? opts.close : close)
 
 	// Bind click on items
 	items.forEach(bind)
@@ -222,7 +229,7 @@ const show = function(items, e, fnClose, fnCallback) {
 	if (typeof e.stopPropagation === 'function') e.stopPropagation()
 
 	// Call callback when a function
-	if (typeof fnCallback === 'function') fnCallback()
+	if (typeof opts.callback === 'function') opts.callback()
 
 	return true
 
@@ -241,7 +248,7 @@ const close = function() {
 
 	if (visible()===false) return false
 
-	let container = document.querySelector('.basicContextContainer')
+	let container = dom().parentElement
 
 	container.parentElement.removeChild(container)
 
