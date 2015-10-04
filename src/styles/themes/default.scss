@@ -32,6 +32,7 @@
 		border-radius: 2px;
 	}
 
+	&__item--hover &__data,
 	&__item:not(.basicContext__item--disabled):hover &__data {
 		color: white;
 		background-color: $basicContext__color;

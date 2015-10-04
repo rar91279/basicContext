@@ -39,7 +39,7 @@ const setContextEvents = function(close, context) {
 
 }
 
-const setItemEvents = function(item = {}, elem) {
+const setItemEvents = function(item, elem) {
 
 	if (elem==null)           return false
 	if (item.visible===false) return false
@@ -47,6 +47,36 @@ const setItemEvents = function(item = {}, elem) {
 
 	elem.onclick       = item.fn
 	elem.oncontextmenu = item.fn
+
+	if (item.items!=null) {
+
+		let timeout = null
+
+		elem.onmouseenter = () => {
+			clearTimeout(timeout)
+			timeout = setTimeout(() => showSubContext(item.items, elem), 150)
+		}
+
+		elem.onmouseleave = () => {
+			clearTimeout(timeout)
+		}
+
+	}
+
+	return true
+
+}
+
+const setPlaceholderEvents = function(close, placeholder, bC) {
+
+	placeholder.onmouseleave = () => {
+
+		if (bC.active()===true) return false
+
+		// Close context
+		close()
+
+	}
 
 	return true
 
@@ -142,12 +172,55 @@ const getPosition = function(normalizedPosition, context) {
 
 const showContext = function(position, context) {
 
-	context.style.left            = `${ position.x }px`
 	context.style.top             = `${ position.y }px`
+	context.style.left            = `${ position.x }px`
 	context.style.transformOrigin = `${ position.rx }px ${ position.ry }px`
 	context.style.opacity         = 1
 
 	return true
+
+}
+
+const showPlaceholder = function(boundingClientRect, placeholder) {
+
+	placeholder.style.top     = `${ boundingClientRect.top }px`
+	placeholder.style.left    = `${ boundingClientRect.left }px`
+	placeholder.style.width   = `${ boundingClientRect.width }px`
+	placeholder.style.height  = `${ boundingClientRect.height }px`
+
+	return true
+
+}
+
+const showSubContext = function(items, elem) {
+
+	let boundingClientRect = elem.getBoundingClientRect()
+
+	let close = (bC) => {
+
+		// Remove highlight from element
+		elem.classList.remove('basicContext__item--hover')
+
+		// Close context
+		bC.close()
+
+	}
+
+	let e = {
+		clientX : boundingClientRect.left + boundingClientRect.width,
+		clientY : boundingClientRect.top
+	}
+
+	let opts = {
+		source : boundingClientRect,
+		close  : close
+	}
+
+	// Show the sub-context
+	new basicContext(e, items, opts)
+
+	// Highlight current element
+	elem.classList.add('basicContext__item--hover')
 
 }
 
@@ -184,8 +257,8 @@ const renderItem = function(item, num) {
 	if (item.type===ITEM) {
 
 		html = `
-		       <tr class="basicContext__item ${ item.class }">
-		           <td class='basicContext__data' data-num="${ item.num }">${ item.content }</td>
+		       <tr class="basicContext__item ${ item.class }" data-num="${ item.num }">
+		           <td class='basicContext__data'>${ item.content }</td>
 		       </tr>
 		       `
 
@@ -201,12 +274,19 @@ const renderItem = function(item, num) {
 
 }
 
-return class {
+const renderPlaceholder = function() {
+
+	return `<div class="basicContextContainer__placeholder"></div>`
+
+}
+
+const basicContext = class {
 
 	constructor(e, items, opts = {}) {
 
-		// Force this binding
+		// Ensure correct binding
 		this.dom     = this.dom.bind(this)
+		this.active  = this.active.bind(this)
 		this.visible = this.visible.bind(this)
 		this.close   = this.close.bind(this)
 
@@ -242,11 +322,36 @@ return class {
 		if (typeof opts.show === 'function') opts.show(position, context)
 		else                                 showContext(position, context)
 
+		// Define the close function
+		let close = null
+		if (typeof opts.close === 'function') close = () => opts.close(this)
+		else                                  close = () => this.close(this)
+
 		// Bind events on context
-		setContextEvents((typeof opts.close === 'function' ? opts.close : this.close), context)
+		setContextEvents(close, context)
 
 		// Bind events on items
-		items.forEach((item) => setItemEvents(item, this.dom(`td[data-num='${ item.num }']`)))
+		items.forEach((item) => setItemEvents(item, this.dom(`.basicContext__item[data-num='${ item.num }']`)))
+
+		// Render placeholder when context is a sub-context
+		if (opts.source!=null) {
+
+			// Cache the container
+			let container = this.dom().parentElement
+
+			// Render placeholder and add new context to the body
+			container.insertAdjacentHTML('beforeend', renderPlaceholder())
+
+			// Cache the placeholder
+			let placeholder = container.querySelector('.basicContextContainer__placeholder')
+
+			// Set the position and size of the placeholder
+			showPlaceholder(opts.source, placeholder)
+
+			// Bind events on placeholder
+			setPlaceholderEvents(close, placeholder, this)
+
+		}
 
 		// Do not trigger default event or further propagation
 		if (typeof e.preventDefault === 'function')  e.preventDefault()
@@ -262,6 +367,12 @@ return class {
 	dom(elem = '') {
 
 		return document.querySelector(`.basicContext[data-id='${ this.id }'] ${ elem }`)
+
+	}
+
+	active() {
+
+		return (this.dom().parentElement.querySelector('.basicContext:hover')==null ? false : true)
 
 	}
 
@@ -290,3 +401,5 @@ return class {
 	}
 
 }
+
+return basicContext
