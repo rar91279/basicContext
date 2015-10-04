@@ -67,21 +67,6 @@ const setItemEvents = function(item, elem) {
 
 }
 
-const setPlaceholderEvents = function(close, placeholder, bC) {
-
-	placeholder.onmouseleave = () => {
-
-		if (bC.active()===true) return false
-
-		// Close context
-		close()
-
-	}
-
-	return true
-
-}
-
 const setOverflow = function() {
 
 	if (overflow!=null) return false
@@ -181,17 +166,6 @@ const showContext = function(position, context) {
 
 }
 
-const showPlaceholder = function(boundingClientRect, placeholder) {
-
-	placeholder.style.top     = `${ boundingClientRect.top }px`
-	placeholder.style.left    = `${ boundingClientRect.left }px`
-	placeholder.style.width   = `${ boundingClientRect.width }px`
-	placeholder.style.height  = `${ boundingClientRect.height }px`
-
-	return true
-
-}
-
 const showSubContext = function(items, elem) {
 
 	let boundingClientRect = elem.getBoundingClientRect()
@@ -274,12 +248,6 @@ const renderItem = function(item, num) {
 
 }
 
-const renderPlaceholder = function() {
-
-	return `<div class="basicContextContainer__placeholder"></div>`
-
-}
-
 const basicContext = class {
 
 	constructor(e, items, opts = {}) {
@@ -332,26 +300,6 @@ const basicContext = class {
 
 		// Bind events on items
 		items.forEach((item) => setItemEvents(item, this.dom(`.basicContext__item[data-num='${ item.num }']`)))
-
-		// Render placeholder when context is a sub-context
-		if (opts.source!=null) {
-
-			// Cache the container
-			let container = this.dom().parentElement
-
-			// Render placeholder and add new context to the body
-			container.insertAdjacentHTML('beforeend', renderPlaceholder())
-
-			// Cache the placeholder
-			let placeholder = container.querySelector('.basicContextContainer__placeholder')
-
-			// Set the position and size of the placeholder
-			showPlaceholder(opts.source, placeholder)
-
-			// Bind events on placeholder
-			setPlaceholderEvents(close, placeholder, this)
-
-		}
 
 		// Do not trigger default event or further propagation
 		if (typeof e.preventDefault === 'function')  e.preventDefault()
