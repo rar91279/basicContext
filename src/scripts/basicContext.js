@@ -1,15 +1,9 @@
 let overflow = null
 
-const ITEM      = 'item',
-      SEPARATOR = 'separator'
+const ITEM      = 'ITEM',
+      SEPARATOR = 'SEPARATOR'
 
-const dom = function(elem = '') {
-
-	return document.querySelector('.basicContext ' + elem)
-
-}
-
-const valid = function(item = {}) {
+const getParsedItem = function(item = {}) {
 
 	// Detect type of item
 	item.type = (Object.keys(item).length===0 ? SEPARATOR : ITEM)
@@ -28,69 +22,55 @@ const valid = function(item = {}) {
 	if (typeof item.fn !== 'function' && item.type!==SEPARATOR && item.disabled===false) {
 
 		console.warn(`Missing fn for item '${ item.content }'`)
-		return false
+		item = null
 
 	}
+
+	return item
+
+}
+
+const setContextEvents = function(close, context) {
+
+	context.parentElement.onclick       = close
+	context.parentElement.oncontextmenu = close
 
 	return true
 
 }
 
-const buildItem = function(item, num) {
+const setItemEvents = function(item = {}, elem) {
 
-	let html = ''
+	if (elem==null)           return false
+	if (item.visible===false) return false
+	if (item.disabled===true) return false
 
-	// Parse and validate item
-	if (valid(item)===false) return ''
+	elem.onclick       = item.fn
+	elem.oncontextmenu = item.fn
 
-	// Skip when invisible
-	if (item.visible===false) return ''
-
-	// Give item a unique number
-	item.num = num
-
-	// Generate item
-	if (item.type===ITEM) {
-
-		html = `
-		       <tr class='basicContext__item ${ item.class }'>
-		           <td class='basicContext__data' data-num='${ item.num }'>${ item.content }</td>
-		       </tr>
-		       `
-
-	} else if (item.type===SEPARATOR) {
-
-		html = `
-		       <tr class='basicContext__item basicContext__item--separator'></tr>
-		       `
-
-	}
-
-	return html
+	return true
 
 }
 
-const build = function(items = []) {
+const setOverflow = function() {
 
-	let html = ''
+	if (overflow!=null) return false
 
-	html += `
-	        <div class='basicContextContainer'>
-	            <div class='basicContext'>
-	                <table>
-	                    <tbody>
-	        `
+	overflow = document.body.style.overflow
+	document.body.style.overflow = 'hidden'
 
-	items.forEach((item, i) => html += buildItem(item, i))
+	return true
 
-	html += `
-	                    </tbody>
-	                </table>
-	            </div>
-	        </div>
-	        `
+}
 
-	return html
+const resetOverflow = function() {
+
+	if (overflow==null) return false
+
+	document.body.style.overflow = overflow
+	overflow = null
+
+	return true
 
 }
 
@@ -160,104 +140,153 @@ const getPosition = function(normalizedPosition, context) {
 
 }
 
-const bind = function(item = {}) {
-
-	if (item.fn==null)        return false
-	if (item.visible===false) return false
-	if (item.disabled===true) return false
-
-	dom(`td[data-num='${ item.num }']`).onclick       = item.fn
-	dom(`td[data-num='${ item.num }']`).oncontextmenu = item.fn
-
-	return true
-
-}
-
-const setStyles = function(position, context) {
+const showContext = function(position, context) {
 
 	context.style.left            = `${ position.x }px`
 	context.style.top             = `${ position.y }px`
 	context.style.transformOrigin = `${ position.rx }px ${ position.ry }px`
 	context.style.opacity         = 1
 
-}
-
-const show = function(e, items, opts = {}) {
-
-	// Build context
-	let html = build(items)
-
-	// Add context to the body
-	document.body.insertAdjacentHTML('beforeend', html)
-
-	// Save current overflow and block scrolling of site
-	if (overflow==null) {
-		overflow = document.body.style.overflow
-		document.body.style.overflow = 'hidden'
-	}
-
-	// Cache the context
-	let context = dom()
-
-	// Get the normalized click position
-	let normalizedPosition = getNormalizedPosition(e)
-
-	// Calculate position
-	let position = getPosition(normalizedPosition, context)
-
-	// Set styles and position
-	if (typeof opts.show === 'function') opts.show(position, context)
-	else                                 setStyles(position, context)
-
-	// Bind click on background
-	context.parentElement.onclick       = (typeof opts.close === 'function' ? opts.close : close)
-	context.parentElement.oncontextmenu = (typeof opts.close === 'function' ? opts.close : close)
-
-	// Bind click on items
-	items.forEach(bind)
-
-	// Do not trigger default event or further propagation
-	if (typeof e.preventDefault === 'function')  e.preventDefault()
-	if (typeof e.stopPropagation === 'function') e.stopPropagation()
-
-	// Call callback when a function
-	if (typeof opts.callback === 'function') opts.callback()
-
 	return true
 
 }
 
-const visible = function() {
+const renderContext = function(id, items = '') {
 
-	let elem = dom()
-
-	if (elem==null || elem.length===0) return false
-	else                               return true
+	return `
+	       <div class="basicContextContainer">
+	           <div class="basicContext" data-id="${ id }"">
+	               <table>
+	                   <tbody>
+	                   		${ items }
+	                   </tbody>
+	               </table>
+	           </div>
+	       </div>
+	       `
 
 }
 
-const close = function() {
+const renderItem = function(item, num) {
 
-	if (visible()===false) return false
+	let html = ''
 
-	let container = dom().parentElement
+	// Skip when invalid
+	if (item===null) return ''
 
-	container.parentElement.removeChild(container)
+	// Skip when invisible
+	if (item.visible===false) return ''
 
-	// Reset overflow to its original value
-	if (overflow!=null) {
-		document.body.style.overflow = overflow
-		overflow = null
+	// Give item a unique number
+	item.num = num
+
+	// Generate item
+	if (item.type===ITEM) {
+
+		html = `
+		       <tr class="basicContext__item ${ item.class }">
+		           <td class='basicContext__data' data-num="${ item.num }">${ item.content }</td>
+		       </tr>
+		       `
+
+	} else if (item.type===SEPARATOR) {
+
+		html = `
+		       <tr class="basicContext__item basicContext__item--separator"></tr>
+		       `
+
 	}
 
-	return true
+	return html
 
 }
 
-return {
-	ITEM,
-	SEPARATOR,
-	show,
-	visible,
-	close
+return class {
+
+	constructor(e, items, opts = {}) {
+
+		// Force this binding
+		this.dom     = this.dom.bind(this)
+		this.visible = this.visible.bind(this)
+		this.close   = this.close.bind(this)
+
+		// Generate the id
+		this.id = +new Date()
+
+		// Save current overflow and block scrolling of site
+		setOverflow()
+
+		// Parse and validate items
+		items.forEach((item, i) => items[i] = getParsedItem(item))
+
+		// Render items
+		let html = ''
+		items.forEach((item, i) => html += renderItem(item, i))
+
+		// Wrap context around items
+		html = renderContext(this.id, html)
+
+		// Add context to the body
+		document.body.insertAdjacentHTML('beforeend', html)
+
+		// Cache the context
+		let context = this.dom()
+
+		// Get the normalized click position
+		let normalizedPosition = getNormalizedPosition(e)
+
+		// Calculate position
+		let position = getPosition(normalizedPosition, context)
+
+		// Set styles and position
+		if (typeof opts.show === 'function') opts.show(position, context)
+		else                                 showContext(position, context)
+
+		// Bind events on context
+		setContextEvents((typeof opts.close === 'function' ? opts.close : this.close), context)
+
+		// Bind events on items
+		items.forEach((item) => setItemEvents(item, this.dom(`td[data-num='${ item.num }']`)))
+
+		// Do not trigger default event or further propagation
+		if (typeof e.preventDefault === 'function')  e.preventDefault()
+		if (typeof e.stopPropagation === 'function') e.stopPropagation()
+
+		// Call callback when a function
+		if (typeof opts.callback === 'function') opts.callback()
+
+		return true
+
+	}
+
+	dom(elem = '') {
+
+		return document.querySelector(`.basicContext[data-id='${ this.id }'] ${ elem }`)
+
+	}
+
+	visible() {
+
+		let elem = this.dom()
+
+		if (elem==null || elem.length===0) return false
+		else                               return true
+
+	}
+
+	close() {
+
+		if (this.visible()===false) return false
+
+		let container = this.dom().parentElement
+
+		container.parentElement.removeChild(container)
+
+		// Reset overflow to its original value
+		resetOverflow()
+
+		return true
+
+	}
+
 }
