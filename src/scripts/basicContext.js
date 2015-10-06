@@ -237,6 +237,9 @@ export default class basicContext {
 		    elem      = this.elem,
 		    container = elem.parentElement
 
+		// Close child first
+		if (opts.child!=null) opts.child.close()
+
 		if (opts.parent==null) container.parentElement.removeChild(container)
 		else                   elem.parentElement.removeChild(elem)
 
