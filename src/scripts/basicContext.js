@@ -151,16 +151,15 @@ export default class basicContext {
 		let opts     = this.opts,
 		    itemSize = item.elem.getBoundingClientRect()
 
-		// Don't open a new sub-context when a child is already visible
+		// Don't open a new child when a child is already visible
 		if (opts.child!=null) return false
 
 		let close = () => {
 
-			// Only close sub-context when current context has a child
 			if (opts.child!=null) {
 
 				// Only close child when hovered item
-				// is not the trigger of the sub-context
+				// is not the producer of the child
 				if (item.active()===false) {
 
 					// Remove highlight from item
@@ -182,7 +181,6 @@ export default class basicContext {
 
 		}
 
-		// Show the sub-context
 		opts.child = new basicContext({
 			clientX : itemSize.left + itemSize.width,
 			clientY : itemSize.top
@@ -263,7 +261,7 @@ export default class basicContext {
 		// Wrap context around items
 		html = this.renderContext(id, opts, html)
 
-		// Wrap container around context when context is not an sub-context
+		// Wrap container around context when context is not a child
 		if (opts.parent==null) html = this.renderContainer(html)
 
 		return html
