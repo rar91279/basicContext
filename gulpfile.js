@@ -1,7 +1,11 @@
-var	name    = require('./package.json').moduleName,
-    fs      = require('fs'),
-    gulp    = require('gulp'),
-    plugins = require('gulp-load-plugins')()
+var	name       = require('./package.json').moduleName,
+    fs         = require('fs'),
+    gulp       = require('gulp'),
+    browserify = require('browserify'),
+    babelify   = require('babelify'),
+    source     = require('vinyl-source-stream'),
+    buffer     = require('vinyl-buffer'),
+    plugins    = require('gulp-load-plugins')()
 
 var head = fs.readFileSync('./node_modules/@electerious/modulizer/head.js', { encoding: 'utf8' }),
     foot = fs.readFileSync('./node_modules/@electerious/modulizer/foot.js', { encoding: 'utf8' })
@@ -43,15 +47,26 @@ gulp.task('styles', function() {
 
 gulp.task('scripts', function() {
 
-	gulp.src('./src/scripts/*.js')
-	    .pipe(plugins.header(head, { name: name }))
-	    .pipe(plugins.footer(foot))
-	    .pipe(plugins.babel())
-	    .on('error', catchError)
-	    .pipe(plugins.concat(name + '.min.js', { newLine: "\n" }))
-	    .pipe(plugins.uglify())
-	    .on('error', catchError)
-	    .pipe(gulp.dest('./dist'))
+	var browserifyOpts = {
+		entries    : './src/scripts/basicContext.js',
+		debug      : true,
+		standalone : name
+	}
+
+	var babelifyOpts = {
+		modules: 'umd'
+	}
+
+	var b = browserify(browserifyOpts)
+
+	b.transform(babelify.configure(babelifyOpts))
+	 .bundle()
+	 .on('error', catchError)
+	 .pipe(source('basicContext.min.js'))
+	 .pipe(buffer())
+	 // .pipe(plugins.uglify())
+	 // .on('error', catchError)
+	 .pipe(gulp.dest('./dist'))
 
 })
 

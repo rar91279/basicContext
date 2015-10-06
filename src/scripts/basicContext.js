@@ -1,332 +1,228 @@
-let overflow = null
+import * as overflow from './overflow'
+import * as coordinates from './coordinates'
 
-const ITEM      = 'ITEM',
-      SEPARATOR = 'SEPARATOR'
+import basicContextItem from './basicContextItem'
+import objectAssign from 'object-assign'
 
-const getParsedItem = function(item = {}) {
-
-	// Detect type of item
-	item.type = (Object.keys(item).length===0 ? SEPARATOR : ITEM)
-
-	// Set default values
-	if (item.class==null)     item.class   = ''
-	if (item.visible!==false) item.visible = true
-	if (item.content==null)   item.content = 'Undefined'
-
-	// Add disabled class when item disabled
-	if (item.disabled!==true) item.disabled = false
-	if (item.disabled===true) item.class += ' basicContext__item--disabled'
-
-	// Item requires a function when
-	// it's not a separator and not disabled
-	if (typeof item.fn !== 'function' && item.type!==SEPARATOR && item.disabled===false) {
-
-		console.warn(`Missing fn for item '${ item.content }'`)
-		item = null
-
-	}
-
-	return item
-
-}
-
-const setContextEvents = function(close, context) {
-
-	context.parentElement.onclick       = close
-	context.parentElement.oncontextmenu = close
-
-	return true
-
-}
-
-const setItemEvents = function(item, elem) {
-
-	if (elem==null)           return false
-	if (item.visible===false) return false
-	if (item.disabled===true) return false
-
-	elem.onclick       = item.fn
-	elem.oncontextmenu = item.fn
-
-	if (item.items!=null) {
-
-		let timeout = null
-
-		elem.onmouseenter = () => {
-			clearTimeout(timeout)
-			timeout = setTimeout(() => showSubContext(item.items, elem), 150)
-		}
-
-		elem.onmouseleave = () => {
-			clearTimeout(timeout)
-		}
-
-	}
-
-	return true
-
-}
-
-const setOverflow = function() {
-
-	if (overflow!=null) return false
-
-	overflow = document.body.style.overflow
-	document.body.style.overflow = 'hidden'
-
-	return true
-
-}
-
-const resetOverflow = function() {
-
-	if (overflow==null) return false
-
-	document.body.style.overflow = overflow
-	overflow = null
-
-	return true
-
-}
-
-const getNormalizedPosition = function(e = {}) {
-
-	let pos = {
-		x : e.clientX,
-		y : e.clientY
-	}
-
-	if (e.type==='touchend' && (pos.x==null || pos.y==null)) {
-
-		// We need to capture clientX and clientY from original event
-		// when the event 'touchend' does not return the touch position
-
-		let touches = e.changedTouches
-
-		if (touches!=null && touches.length>0) {
-			pos.x = touches[0].clientX
-			pos.y = touches[0].clientY
-		}
-
-	}
-
-	// Position unknown
-	if (pos.x==null || pos.x < 0) pos.x = 0
-	if (pos.y==null || pos.y < 0) pos.y = 0
-
-	return pos
-
-}
-
-const getPosition = function(normalizedPosition, context) {
-
-	// Set the initial position
-	let x = normalizedPosition.x,
-	    y = normalizedPosition.y
-
-	// Get size of browser
-	let browserSize = {
-		width  : window.innerWidth,
-		height : window.innerHeight
-	}
-
-	// Get size of context
-	let contextSize = {
-		width  : context.offsetWidth,
-		height : context.offsetHeight
-	}
-
-	// Fix position based on context and browser size
-	if ((x + contextSize.width) > browserSize.width)   x = x - ((x + contextSize.width) - browserSize.width)
-	if ((y + contextSize.height) > browserSize.height) y = y - ((y + contextSize.height) - browserSize.height)
-
-	// Make context scrollable and start at the top of the browser
-	// when context is higher than the browser
-	if (contextSize.height > browserSize.height) {
-		y = 0
-		context.classList.add('basicContext--scrollable')
-	}
-
-	// Calculate the relative position of the mouse to the context
-	let rx = normalizedPosition.x - x,
-	    ry = normalizedPosition.y - y
-
-	return { x, y, rx, ry }
-
-}
-
-const showContext = function(position, context) {
-
-	context.style.top             = `${ position.y }px`
-	context.style.left            = `${ position.x }px`
-	context.style.transformOrigin = `${ position.rx }px ${ position.ry }px`
-	context.style.opacity         = 1
-
-	return true
-
-}
-
-const showSubContext = function(items, elem) {
-
-	let boundingClientRect = elem.getBoundingClientRect()
-
-	let close = (bC) => {
-
-		// Remove highlight from element
-		elem.classList.remove('basicContext__item--hover')
-
-		// Close context
-		bC.close()
-
-	}
-
-	let e = {
-		clientX : boundingClientRect.left + boundingClientRect.width,
-		clientY : boundingClientRect.top
-	}
-
-	let opts = {
-		source : boundingClientRect,
-		close  : close
-	}
-
-	// Show the sub-context
-	new basicContext(e, items, opts)
-
-	// Highlight current element
-	elem.classList.add('basicContext__item--hover')
-
-}
-
-const renderContext = function(id, items = '') {
-
-	return `
-	       <div class="basicContextContainer">
-	           <div class="basicContext" data-id="${ id }"">
-	               <table>
-	                   <tbody>
-	                   		${ items }
-	                   </tbody>
-	               </table>
-	           </div>
-	       </div>
-	       `
-
-}
-
-const renderItem = function(item, num) {
-
-	let html = ''
-
-	// Skip when invalid
-	if (item===null) return ''
-
-	// Skip when invisible
-	if (item.visible===false) return ''
-
-	// Give item a unique number
-	item.num = num
-
-	// Generate item
-	if (item.type===ITEM) {
-
-		html = `
-		       <tr class="basicContext__item ${ item.class }" data-num="${ item.num }">
-		           <td class='basicContext__data'>${ item.content }</td>
-		       </tr>
-		       `
-
-	} else if (item.type===SEPARATOR) {
-
-		html = `
-		       <tr class="basicContext__item basicContext__item--separator"></tr>
-		       `
-
-	}
-
-	return html
-
-}
-
-const basicContext = class {
+export default class basicContext {
 
 	constructor(e, items, opts = {}) {
 
-		// Ensure correct binding
-		this.dom     = this.dom.bind(this)
+		items = items.slice()
+		opts  = objectAssign({}, opts)
+
+		this.id       = null
+		this.items    = items
+		this.opts     = opts
+		this.position = null
+		this.elem     = null
+
+		this.parse   = this.parse.bind(this)
 		this.active  = this.active.bind(this)
 		this.visible = this.visible.bind(this)
 		this.close   = this.close.bind(this)
+		this.show    = this.show.bind(this)
+		this.showSub = this.showSub.bind(this)
+		this.hideSub = this.hideSub.bind(this)
+		this.close   = this.close.bind(this)
 
-		// Generate the id
-		this.id = +new Date()
+		// Generate the id of the context
+		let id = this.id = +new Date()
+
+		// Parse the options
+		this.parse()
 
 		// Save current overflow and block scrolling of site
-		setOverflow()
+		overflow.set()
 
-		// Parse and validate items
-		items.forEach((item, i) => items[i] = getParsedItem(item))
+		// Create items
+		items.forEach((item, num) => {
 
-		// Render items
-		let html = ''
-		items.forEach((item, i) => html += renderItem(item, i))
+			let parent = this,
+			    opts   = { num, parent }
 
-		// Wrap context around items
-		html = renderContext(this.id, html)
+			items[num] = new basicContextItem(item, opts)
 
-		// Add context to the body
-		document.body.insertAdjacentHTML('beforeend', html)
+		})
+
+		// Render and add context to the body
+		if (opts.parent==null) document.body.insertAdjacentHTML('beforeend', this.render())
+		else                   document.querySelector('.basicContextContainer').insertAdjacentHTML('beforeend', this.render())
+
+		// Select the newly created context
+		let elem = this.elem = document.querySelector(`.basicContext[data-id='${ id }']`)
 
 		// Cache the context
-		let context = this.dom()
-
-		// Get the normalized click position
-		let normalizedPosition = getNormalizedPosition(e)
+		this.link(elem)
 
 		// Calculate position
-		let position = getPosition(normalizedPosition, context)
+		let position = this.position = coordinates.get(e, elem)
 
-		// Set styles and position
-		if (typeof opts.show === 'function') opts.show(position, context)
-		else                                 showContext(position, context)
-
-		// Define the close function
-		let close = null
-		if (typeof opts.close === 'function') close = () => opts.close(this)
-		else                                  close = () => this.close(this)
+		// Show the context
+		opts.show()
 
 		// Bind events on context
-		setContextEvents(close, context)
+		this.bind()
 
 		// Bind events on items
-		items.forEach((item) => setItemEvents(item, this.dom(`.basicContext__item[data-num='${ item.num }']`)))
+		items.forEach((item, i) => {
+
+			let elem = this.elem.querySelector(`.basicContext__item[data-num='${ i }']`)
+
+			item.link(elem)
+			item.bind()
+
+		})
+
+		// Call callback when a function
+		opts.callback()
 
 		// Do not trigger default event or further propagation
 		if (typeof e.preventDefault === 'function')  e.preventDefault()
 		if (typeof e.stopPropagation === 'function') e.stopPropagation()
 
-		// Call callback when a function
-		if (typeof opts.callback === 'function') opts.callback()
+		return true
+
+	}
+
+	parse() {
+
+		let opts = this.opts
+
+		if (opts.parent && opts.parent.constructor.name!=='basicContext') opts.parent = null
+
+		if (opts.class==null) opts.class = ''
+		if (opts.parent!=null) opts.class += ' basicContext--child'
+
+		if (typeof opts.show !== 'function')     opts.show     = this.show
+		if (typeof opts.close !== 'function')    opts.close    = this.close
+		if (typeof opts.callback !== 'function') opts.callback = () => {}
 
 		return true
 
 	}
 
-	dom(elem = '') {
+	link(elem) {
 
-		return document.querySelector(`.basicContext[data-id='${ this.id }'] ${ elem }`)
+		this.elem = elem
+
+		return true
+
+	}
+
+	bind() {
+
+		let elem = this.elem,
+		    opts = this.opts
+
+		if (opts.parent==null) {
+
+			elem.parentElement.onclick       = opts.close
+			elem.parentElement.oncontextmenu = opts.close
+
+		}
+
+		elem.onmouseenter = () => {
+
+			if (opts.child!=null) this.hideSub()
+
+		}
+
+		return true
+
+	}
+
+	show() {
+
+		let elem     = this.elem,
+		    position = this.position
+
+		elem.style.top             = `${ position.y }px`
+		elem.style.left            = `${ position.x }px`
+		elem.style.transformOrigin = `${ position.rx }px ${ position.ry }px`
+		elem.style.opacity         = 1
+
+		return true
+
+	}
+
+	showSub(items, item) {
+
+		let opts     = this.opts,
+		    itemSize = item.elem.getBoundingClientRect()
+
+		// Don't open a new sub-context when a child is already visible
+		if (opts.child!=null) return false
+
+		let close = () => {
+
+			// Only close sub-context when current context has a child
+			if (opts.child!=null) {
+
+				// Only close child when hovered item
+				// is not the trigger of the sub-context
+				if (item.active()===false) {
+
+					// Remove highlight from item
+					item.elem.classList.remove('basicContext__item--hover')
+
+					opts.child.close()
+					return true
+
+				}
+
+			} else {
+
+				this.close()
+				return true
+
+			}
+
+			return false
+
+		}
+
+		// Show the sub-context
+		opts.child = new basicContext({
+			clientX : itemSize.left + itemSize.width,
+			clientY : itemSize.top
+		}, items, {
+			parent : this,
+			close  : close
+		})
+
+		// Highlight current item
+		item.elem.classList.add('basicContext__item--hover')
+
+		return true
+
+	}
+
+	hideSub() {
+
+		let opts = this.opts
+
+		if (opts.child==null)           return false
+		if (opts.child.active()===true) return false
+
+		if (opts.child.opts.close()===true) opts.child = null
+
+		return true
 
 	}
 
 	active() {
 
-		return (this.dom().parentElement.querySelector('.basicContext:hover')==null ? false : true)
+		let id   = this.id,
+		    elem = this.elem
+
+		return (elem.parentElement.querySelector(`.basicContext[data-id='${ id }']:hover`)==null ? false : true)
 
 	}
 
 	visible() {
 
-		let elem = this.dom()
+		let elem = this.elem
 
 		if (elem==null || elem.length===0) return false
 		else                               return true
@@ -337,17 +233,62 @@ const basicContext = class {
 
 		if (this.visible()===false) return false
 
-		let container = this.dom().parentElement
+		let opts      = this.opts,
+		    elem      = this.elem,
+		    container = elem.parentElement
 
-		container.parentElement.removeChild(container)
+		if (opts.parent==null) container.parentElement.removeChild(container)
+		else                   elem.parentElement.removeChild(elem)
 
 		// Reset overflow to its original value
-		resetOverflow()
+		overflow.reset()
 
 		return true
 
 	}
 
-}
+	render() {
 
-return basicContext
+		let id    = this.id,
+		    items = this.items,
+		    opts  = this.opts,
+		    html  = ''
+
+		// Render items
+		items.forEach((item) => html += item.render())
+
+		// Wrap context around items
+		html = this.renderContext(id, opts, html)
+
+		// Wrap container around context when context is not an sub-context
+		if (opts.parent==null) html = this.renderContainer(html)
+
+		return html
+
+	}
+
+	renderContext(id, opts, itemsHTML) {
+
+		return `
+		       <div class="basicContext ${ opts.class }" data-id="${ id }">
+		           <table>
+		               <tbody>
+		                   ${ itemsHTML }
+		               </tbody>
+		           </table>
+		       </div>
+		       `
+
+	}
+
+	renderContainer(contextHTML) {
+
+		return `
+		       <div class="basicContextContainer">
+		           ${ contextHTML }
+		       </div>
+		       `
+
+	}
+
+}
