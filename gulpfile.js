@@ -47,26 +47,23 @@ gulp.task('styles', function() {
 
 gulp.task('scripts', function() {
 
-	var browserifyOpts = {
-		entries    : './src/scripts/basicContext.js',
-		debug      : true,
-		standalone : name
-	}
-
 	var babelifyOpts = {
 		modules: 'umd'
 	}
 
-	var b = browserify(browserifyOpts)
+	var bify = browserify({
+		entries    : './src/scripts/basicContext.js',
+		standalone : name
+	})
 
-	b.transform(babelify.configure(babelifyOpts))
-	 .bundle()
-	 .on('error', catchError)
-	 .pipe(source('basicContext.min.js'))
-	 .pipe(buffer())
-	 // .pipe(plugins.uglify())
-	 // .on('error', catchError)
-	 .pipe(gulp.dest('./dist'))
+	bify.transform(babelify.configure(babelifyOpts))
+	    .bundle()
+	    .on('error', catchError)
+	    .pipe(source('basicContext.min.js'))
+	    .pipe(buffer())
+	    // .pipe(plugins.uglify())
+	    // .on('error', catchError)
+	    .pipe(gulp.dest('./dist'))
 
 })
 
