@@ -41,7 +41,7 @@ export default class basicContext {
 			let parent = this,
 			    opts   = { num, parent }
 
-			items[num] = new basicContextItem(item, opts)
+			items[num] = basicContextItem(item, opts)
 
 		})
 
@@ -69,8 +69,8 @@ export default class basicContext {
 
 			let elem = this.elem.querySelector(`.basicContext__item[data-num='${ i }']`)
 
-			item.link(elem)
-			item.bind()
+			item.setElem(elem)
+			item.setEvents()
 
 		})
 
@@ -146,24 +146,24 @@ export default class basicContext {
 
 	}
 
-	showSub(items, item) {
+	showSub(items, itemElem, itemActiveFn) {
 
 		let opts     = this.opts,
-		    itemSize = item.elem.getBoundingClientRect()
+		    itemSize = itemElem.getBoundingClientRect()
 
 		// Don't open a new child when a child is already visible
 		if (opts.child!=null) return false
 
-		let close = () => {
+		const close = () => {
 
 			if (opts.child!=null) {
 
 				// Only close child when hovered item
 				// is not the producer of the child
-				if (item.active()===false) {
+				if (itemActiveFn()===false) {
 
 					// Remove highlight from item
-					item.elem.classList.remove('basicContext__item--hover')
+					itemElem.classList.remove('basicContext__item--hover')
 
 					opts.child.close()
 					return true
@@ -190,7 +190,7 @@ export default class basicContext {
 		})
 
 		// Highlight current item
-		item.elem.classList.add('basicContext__item--hover')
+		itemElem.classList.add('basicContext__item--hover')
 
 		return true
 

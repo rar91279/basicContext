@@ -3,32 +3,13 @@ import objectAssign from 'object-assign'
 const ITEM      = 'ITEM',
       SEPARATOR = 'SEPARATOR'
 
-export default class basicContextItem {
+export default function(item = {}, opts = {}) {
 
-	constructor(item = {}, opts = {}) {
+	let elem = null
+
+	const parseItem = function() {
 
 		item = objectAssign({}, item)
-		opts = objectAssign({}, opts)
-
-		this.item   = item
-		this.opts   = opts
-		this.elem   = null
-
-		this.parse  = this.parse.bind(this)
-		this.link   = this.link.bind(this)
-		this.bind   = this.bind.bind(this)
-		this.active = this.active.bind(this)
-		this.render = this.render.bind(this)
-
-		this.parse()
-
-		return true
-
-	}
-
-	parse() {
-
-		let item = this.item
 
 		// Set default values
 		if (item.type==null)    item.type    = (Object.keys(item).length===0 ? SEPARATOR : ITEM)
@@ -46,7 +27,13 @@ export default class basicContextItem {
 		if (item.visible!==false) item.visible = true
 		if (item.visible===false) item.class += ' basicContext__item--invisible'
 
-		let opts = this.opts
+		return true
+
+	}
+
+	const parseOpts = function() {
+
+		opts = objectAssign({}, opts)
 
 		if (opts.parent && opts.parent.constructor.name!=='basicContext') opts.parent = null
 
@@ -54,19 +41,19 @@ export default class basicContextItem {
 
 	}
 
-	link(elem) {
+	const setElem = function(newElem) {
 
-		this.elem = elem
-
-		return true
+		elem = newElem
 
 	}
 
-	bind() {
+	const isActive = function() {
 
-		let item = this.item,
-		    opts = this.opts,
-		    elem = this.elem
+		return (elem.parentElement.querySelector(`.basicContext__item[data-num='${ opts.num }']:hover`)==null ? false : true)
+
+	}
+
+	const setEvents = function() {
 
 		if (elem==null)           return false
 		if (item.disabled===true) return false
@@ -80,7 +67,7 @@ export default class basicContextItem {
 
 			elem.onmouseenter = () => {
 				clearTimeout(timeout)
-				timeout = setTimeout(() => opts.parent.showSub(item.items, this), 150)
+				timeout = setTimeout(() => opts.parent.showSub(item.items, elem, isActive), 150)
 			}
 
 			elem.onmouseleave = () => {
@@ -94,38 +81,38 @@ export default class basicContextItem {
 
 	}
 
-	active() {
+	const render = function() {
 
-		let opts = this.opts,
-		    elem = this.elem
-
-		return (elem.parentElement.querySelector(`.basicContext__item[data-num='${ opts.num }']:hover`)==null ? false : true)
+		if (item.type===ITEM)      return renderItem()
+		if (item.type===SEPARATOR) return renderSeparator()
 
 	}
 
-	render() {
+	const renderItem = function() {
 
-		let item = this.item,
-		    opts = this.opts
+		return `
+		       <tr class="basicContext__item ${ item.class }" data-num="${ opts.num }">
+		           <td class='basicContext__data'>${ item.content }</td>
+		       </tr>
+		       `
 
-		if (item.type===ITEM) {
+	}
 
-			return `
-			       <tr class="basicContext__item ${ item.class }" data-num="${ opts.num }">
-			           <td class='basicContext__data'>${ item.content }</td>
-			       </tr>
-			       `
+	const renderSeparator = function() {
 
-		}
+		return `
+		       <tr class="basicContext__item basicContext__item--separator"></tr>
+		       `
 
-		if (item.type===SEPARATOR) {
+	}
 
-			return `
-			       <tr class="basicContext__item basicContext__item--separator"></tr>
-			       `
+	parseItem()
+	parseOpts()
 
-		}
-
+	return {
+		setElem,
+		setEvents,
+		render
 	}
 
 }
