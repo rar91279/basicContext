@@ -35,8 +35,6 @@ export default function(item = {}, opts = {}) {
 
 		opts = objectAssign({}, opts)
 
-		if (opts.parent && opts.parent.constructor.name!=='basicContext') opts.parent = null
-
 		return true
 
 	}
@@ -44,6 +42,18 @@ export default function(item = {}, opts = {}) {
 	const setElem = function(newElem) {
 
 		elem = newElem
+
+	}
+
+	const getElem = function() {
+
+		return elem
+
+	}
+
+	const getItems = function() {
+
+		return item.items
 
 	}
 
@@ -67,7 +77,7 @@ export default function(item = {}, opts = {}) {
 
 			elem.onmouseenter = () => {
 				clearTimeout(timeout)
-				timeout = setTimeout(() => opts.parent.showSub(item.items, elem, isActive), 150)
+				timeout = setTimeout(() => opts.parent.showSub(exports()), 150)
 			}
 
 			elem.onmouseleave = () => {
@@ -106,13 +116,22 @@ export default function(item = {}, opts = {}) {
 
 	}
 
+	const exports = function() {
+
+		return {
+			setElem,
+			getElem,
+			getItems,
+			isActive,
+			setEvents,
+			render
+		}
+
+	}
+
 	parseItem()
 	parseOpts()
 
-	return {
-		setElem,
-		setEvents,
-		render
-	}
+	return exports()
 
 }

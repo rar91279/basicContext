@@ -4,116 +4,38 @@ import * as coordinates from './coordinates'
 import basicContextItem from './basicContextItem'
 import objectAssign from 'object-assign'
 
-export default class basicContext {
+export default function(e, items, opts = {}) {
 
-	constructor(e, items, opts = {}) {
+	const parseOpts = function() {
 
-		items = items.slice()
-		opts  = objectAssign({}, opts)
+		opts = objectAssign({}, opts)
 
-		this.id       = null
-		this.items    = items
-		this.opts     = opts
-		this.position = null
-		this.elem     = null
-
-		this.parse   = this.parse.bind(this)
-		this.active  = this.active.bind(this)
-		this.visible = this.visible.bind(this)
-		this.close   = this.close.bind(this)
-		this.show    = this.show.bind(this)
-		this.showSub = this.showSub.bind(this)
-		this.hideSub = this.hideSub.bind(this)
-		this.close   = this.close.bind(this)
-
-		// Generate the id of the context
-		let id = this.id = +new Date()
-
-		// Parse the options
-		this.parse()
-
-		// Save current overflow and block scrolling of site
-		overflow.set()
-
-		// Create items
-		items.forEach((item, num) => {
-
-			let parent = this,
-			    opts   = { num, parent }
-
-			items[num] = basicContextItem(item, opts)
-
-		})
-
-		// Render and add context to the body
-		if (opts.parent==null) document.body.insertAdjacentHTML('beforeend', this.render())
-		else                   document.querySelector('.basicContextContainer').insertAdjacentHTML('beforeend', this.render())
-
-		// Select the newly created context
-		let elem = this.elem = document.querySelector(`.basicContext[data-id='${ id }']`)
-
-		// Cache the context
-		this.link(elem)
-
-		// Calculate position
-		let position = this.position = coordinates.get(e, elem)
-
-		// Show the context
-		opts.show()
-
-		// Bind events on context
-		this.bind()
-
-		// Bind events on items
-		items.forEach((item, i) => {
-
-			let elem = this.elem.querySelector(`.basicContext__item[data-num='${ i }']`)
-
-			item.setElem(elem)
-			item.setEvents()
-
-		})
-
-		// Call callback when a function
-		opts.callback()
-
-		// Do not trigger default event or further propagation
-		if (typeof e.preventDefault === 'function')  e.preventDefault()
-		if (typeof e.stopPropagation === 'function') e.stopPropagation()
-
-		return true
-
-	}
-
-	parse() {
-
-		let opts = this.opts
-
-		if (opts.parent && opts.parent.constructor.name!=='basicContext') opts.parent = null
-
-		if (opts.class==null) opts.class = ''
+		if (opts.class==null)  opts.class = ''
 		if (opts.parent!=null) opts.class += ' basicContext--child'
 
-		if (typeof opts.show !== 'function')     opts.show     = this.show
-		if (typeof opts.close !== 'function')    opts.close    = this.close
+		if (typeof opts.show !== 'function')     opts.show     = show
+		if (typeof opts.close !== 'function')    opts.close    = close
 		if (typeof opts.callback !== 'function') opts.callback = () => {}
 
 		return true
 
 	}
 
-	link(elem) {
+	const getOpts = function() {
 
-		this.elem = elem
+		return opts
+
+	}
+
+	const setElem = function(newElem) {
+
+		elem = newElem
 
 		return true
 
 	}
 
-	bind() {
-
-		let elem = this.elem,
-		    opts = this.opts
+	const setEvents = function() {
 
 		if (opts.parent==null) {
 
@@ -124,7 +46,7 @@ export default class basicContext {
 
 		elem.onmouseenter = () => {
 
-			if (opts.child!=null) this.hideSub()
+			if (opts.child!=null) hideSub()
 
 		}
 
@@ -132,10 +54,7 @@ export default class basicContext {
 
 	}
 
-	show() {
-
-		let elem     = this.elem,
-		    position = this.position
+	const show = function() {
 
 		elem.style.top             = `${ position.y }px`
 		elem.style.left            = `${ position.x }px`
@@ -146,10 +65,24 @@ export default class basicContext {
 
 	}
 
-	showSub(items, itemElem, itemActiveFn) {
+	const isActive = function() {
 
-		let opts     = this.opts,
-		    itemSize = itemElem.getBoundingClientRect()
+		return (elem.parentElement.querySelector(`.basicContext[data-id='${ id }']:hover`)==null ? false : true)
+
+	}
+
+	const isVisible = function() {
+
+		if (elem==null || elem.length===0) return false
+		else                               return true
+
+	}
+
+	const showSub = function(item) {
+
+		let itemItems = item.getItems(),
+		    itemElem  = item.getElem(),
+		    itemSize  = itemElem.getBoundingClientRect()
 
 		// Don't open a new child when a child is already visible
 		if (opts.child!=null) return false
@@ -160,7 +93,7 @@ export default class basicContext {
 
 				// Only close child when hovered item
 				// is not the producer of the child
-				if (itemActiveFn()===false) {
+				if (item.isActive()===false) {
 
 					// Remove highlight from item
 					itemElem.classList.remove('basicContext__item--hover')
@@ -172,7 +105,7 @@ export default class basicContext {
 
 			} else {
 
-				this.close()
+				close()
 				return true
 
 			}
@@ -181,11 +114,11 @@ export default class basicContext {
 
 		}
 
-		opts.child = new basicContext({
+		opts.child = basicContext({
 			clientX : itemSize.left + itemSize.width,
 			clientY : itemSize.top
-		}, items, {
-			parent : this,
+		}, itemItems, {
+			parent : exports(),
 			close  : close
 		})
 
@@ -196,44 +129,22 @@ export default class basicContext {
 
 	}
 
-	hideSub() {
+	const hideSub = function() {
 
-		let opts = this.opts
+		if (opts.child==null)             return false
+		if (opts.child.isActive()===true) return false
 
-		if (opts.child==null)           return false
-		if (opts.child.active()===true) return false
-
-		if (opts.child.opts.close()===true) opts.child = null
+		if (opts.child.getOpts().close()===true) opts.child = null
 
 		return true
 
 	}
 
-	active() {
+	const close = function() {
 
-		let id   = this.id,
-		    elem = this.elem
+		if (isVisible()===false) return false
 
-		return (elem.parentElement.querySelector(`.basicContext[data-id='${ id }']:hover`)==null ? false : true)
-
-	}
-
-	visible() {
-
-		let elem = this.elem
-
-		if (elem==null || elem.length===0) return false
-		else                               return true
-
-	}
-
-	close() {
-
-		if (this.visible()===false) return false
-
-		let opts      = this.opts,
-		    elem      = this.elem,
-		    container = elem.parentElement
+		let container = elem.parentElement
 
 		// Close child first
 		if (opts.child!=null) opts.child.close()
@@ -248,27 +159,24 @@ export default class basicContext {
 
 	}
 
-	render() {
+	const render = function() {
 
-		let id    = this.id,
-		    items = this.items,
-		    opts  = this.opts,
-		    html  = ''
+		let html  = ''
 
 		// Render items
 		items.forEach((item) => html += item.render())
 
 		// Wrap context around items
-		html = this.renderContext(id, opts, html)
+		html = renderContext(id, opts, html)
 
 		// Wrap container around context when context is not a child
-		if (opts.parent==null) html = this.renderContainer(html)
+		if (opts.parent==null) html = renderContainer(html)
 
 		return html
 
 	}
 
-	renderContext(id, opts, itemsHTML) {
+	const renderContext = function(id, opts, itemsHTML) {
 
 		return `
 		       <div class="basicContext ${ opts.class }" data-id="${ id }">
@@ -282,7 +190,7 @@ export default class basicContext {
 
 	}
 
-	renderContainer(contextHTML) {
+	const renderContainer = function(contextHTML) {
 
 		return `
 		       <div class="basicContextContainer">
@@ -291,5 +199,71 @@ export default class basicContext {
 		       `
 
 	}
+
+	const exports = function() {
+
+		return {
+			getOpts,
+			isActive,
+			showSub,
+			hideSub,
+			close
+		}
+
+	}
+
+	let position = null,
+	    elem     = null,
+	    id       = +new Date()
+
+	parseOpts()
+
+	// Save current overflow and block scrolling of site
+	overflow.set()
+
+	// Create items
+	items = items.map((item, num) => {
+
+		let parent = exports(),
+		    opts   = { num, parent }
+
+		return basicContextItem(item, opts)
+
+	})
+
+	// Render and add context to the body
+	if (opts.parent==null) document.body.insertAdjacentHTML('beforeend', render())
+	else                   document.querySelector('.basicContextContainer').insertAdjacentHTML('beforeend', render())
+
+	// Select the newly created context and cache it
+	setElem(document.querySelector(`.basicContext[data-id='${ id }']`))
+
+	// Calculate position
+	position = coordinates.get(e, elem)
+
+	// Show the context
+	opts.show()
+
+	// Bind events on context
+	setEvents()
+
+	// Bind events on items
+	items.forEach((item, i) => {
+
+		let itemElem = elem.querySelector(`.basicContext__item[data-num='${ i }']`)
+
+		item.setElem(itemElem)
+		item.setEvents()
+
+	})
+
+	// Call callback when a function
+	opts.callback()
+
+	// Do not trigger default event or further propagation
+	if (typeof e.preventDefault === 'function')  e.preventDefault()
+	if (typeof e.stopPropagation === 'function') e.stopPropagation()
+
+	return exports()
 
 }
