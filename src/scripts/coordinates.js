@@ -1,4 +1,4 @@
-const normalize = function(e = {}) {
+const getNormalizeEvent = function(e) {
 
 	let pos = {
 		x : e.clientX,
@@ -27,27 +27,42 @@ const normalize = function(e = {}) {
 
 }
 
-export const get = function(e, elem) {
+const getBrowserSize = function() {
 
-	let normalizedPosition = normalize(e)
+	return {
+		width  : window.innerWidth,
+		height : window.innerHeight
+	}
+
+}
+
+const getElemSize = function(elem) {
+
+	let size = elem.getBoundingClientRect()
+
+	return {
+		width  : size.width,
+		height : size.height
+	}
+
+}
+
+export default function(e = {}, elem) {
+
+	let normalizedPosition = getNormalizeEvent(e)
 
 	// Set the initial position
 	let x = normalizedPosition.x,
 	    y = normalizedPosition.y
 
 	// Get size of browser
-	let browserSize = {
-		width  : window.innerWidth,
-		height : window.innerHeight
-	}
+	let browserSize = getBrowserSize()
 
 	// Get size of elem
-	let elemSize = {
-		width  : elem.offsetWidth,
-		height : elem.offsetHeight
-	}
+	let elemSize = getElemSize(elem)
 
 	// Fix position based on elem and browser size
+	// The context should never leave the screen
 	if ((x + elemSize.width) > browserSize.width)   x = x - ((x + elemSize.width) - browserSize.width)
 	if ((y + elemSize.height) > browserSize.height) y = y - ((y + elemSize.height) - browserSize.height)
 
