@@ -1,10 +1,20 @@
 import * as overflow from './overflow'
-import * as coordinates from './coordinates'
+
+import coordinates from './coordinates'
 
 import basicContextItem from './basicContextItem'
 import objectAssign from 'object-assign'
 
 export default function(e, items, opts = {}) {
+
+	const initItem = function(item, num) {
+
+		let parent = exports(),
+		    opts   = { num, parent }
+
+		return basicContextItem(item, opts)
+
+	}
 
 	const parseOpts = function() {
 
@@ -140,6 +150,15 @@ export default function(e, items, opts = {}) {
 
 	}
 
+	const preventDefaultEvent = function(e) {
+
+		if (typeof e.preventDefault === 'function')  e.preventDefault()
+		if (typeof e.stopPropagation === 'function') e.stopPropagation()
+
+		return true
+
+	}
+
 	const close = function() {
 
 		if (isVisible()===false) return false
@@ -149,11 +168,20 @@ export default function(e, items, opts = {}) {
 		// Close child first
 		if (opts.child!=null) opts.child.close()
 
-		if (opts.parent==null) container.parentElement.removeChild(container)
-		else                   elem.parentElement.removeChild(elem)
+		// Close container
+		if (opts.parent==null) {
 
-		// Reset overflow to its original value
-		overflow.reset()
+			container.parentElement.removeChild(container)
+
+		} else {
+
+			elem.parentElement.removeChild(elem)
+
+			// Reset overflow to its original value when
+			// the current context is the only context
+			overflow.reset()
+
+		}
 
 		return true
 
@@ -161,42 +189,32 @@ export default function(e, items, opts = {}) {
 
 	const render = function() {
 
-		let html  = ''
+		let html = ''
 
 		// Render items
-		items.forEach((item) => html += item.render())
+		html = items.map((item) => item.render()).join('')
 
 		// Wrap context around items
-		html = renderContext(id, opts, html)
-
-		// Wrap container around context when context is not a child
-		if (opts.parent==null) html = renderContainer(html)
-
-		return html
-
-	}
-
-	const renderContext = function(id, opts, itemsHTML) {
-
-		return `
+		html = `
 		       <div class="basicContext ${ opts.class }" data-id="${ id }">
 		           <table>
 		               <tbody>
-		                   ${ itemsHTML }
+		                   ${ html }
 		               </tbody>
 		           </table>
 		       </div>
 		       `
 
+		// Wrap container around context when context is not a child
+		if (opts.parent==null) html = `<div class="basicContextContainer">${ html }</div`
+
+		return html
+
 	}
 
-	const renderContainer = function(contextHTML) {
+	const insertIn = function(elem, html) {
 
-		return `
-		       <div class="basicContextContainer">
-		           ${ contextHTML }
-		       </div>
-		       `
+		elem.insertAdjacentHTML('beforeend', html)
 
 	}
 
@@ -221,25 +239,18 @@ export default function(e, items, opts = {}) {
 	// Save current overflow and block scrolling of site
 	overflow.set()
 
-	// Create items
-	items = items.map((item, num) => {
-
-		let parent = exports(),
-		    opts   = { num, parent }
-
-		return basicContextItem(item, opts)
-
-	})
+	// Initialize items
+	items = items.map(initItem)
 
 	// Render and add context to the body
-	if (opts.parent==null) document.body.insertAdjacentHTML('beforeend', render())
-	else                   document.querySelector('.basicContextContainer').insertAdjacentHTML('beforeend', render())
+	if (opts.parent==null) insertIn(document.body, render())
+	else                   insertIn(document.querySelector('.basicContextContainer'), render())
 
 	// Select the newly created context and cache it
 	setElem(document.querySelector(`.basicContext[data-id='${ id }']`))
 
 	// Calculate position
-	position = coordinates.get(e, elem)
+	position = coordinates(e, elem)
 
 	// Show the context
 	opts.show()
@@ -248,9 +259,9 @@ export default function(e, items, opts = {}) {
 	setEvents()
 
 	// Bind events on items
-	items.forEach((item, i) => {
+	items.forEach((item, num) => {
 
-		let itemElem = elem.querySelector(`.basicContext__item[data-num='${ i }']`)
+		let itemElem = elem.querySelector(`.basicContext__item[data-num='${ num }']`)
 
 		item.setElem(itemElem)
 		item.setEvents()
@@ -260,9 +271,8 @@ export default function(e, items, opts = {}) {
 	// Call callback when a function
 	opts.callback()
 
-	// Do not trigger default event or further propagation
-	if (typeof e.preventDefault === 'function')  e.preventDefault()
-	if (typeof e.stopPropagation === 'function') e.stopPropagation()
+	// Do not trigger default event
+	preventDefaultEvent(e)
 
 	return exports()
 
