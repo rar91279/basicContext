@@ -7,9 +7,6 @@ var	name       = require('./package.json').moduleName,
     buffer     = require('vinyl-buffer'),
     plugins    = require('gulp-load-plugins')()
 
-var head = fs.readFileSync('./node_modules/@electerious/modulizer/head.js', { encoding: 'utf8' }),
-    foot = fs.readFileSync('./node_modules/@electerious/modulizer/foot.js', { encoding: 'utf8' })
-
 var catchError = function(err) {
 
 	console.log(err.toString())
@@ -59,8 +56,8 @@ gulp.task('scripts', function() {
 	    .on('error', catchError)
 	    .pipe(source('basicContext.min.js'))
 	    .pipe(buffer())
-	    // .pipe(plugins.uglify())
-	    // .on('error', catchError)
+	    .pipe(plugins.uglify())
+	    .on('error', catchError)
 	    .pipe(gulp.dest('./dist'))
 
 })
