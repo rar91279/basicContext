@@ -47,16 +47,14 @@ gulp.task('styles', function() {
 
 gulp.task('scripts', function() {
 
-	var babelifyOpts = {
-		modules: 'umd'
-	}
-
 	var bify = browserify({
 		entries    : './src/scripts/basicContext.js',
 		standalone : name
 	})
 
-	bify.transform(babelify.configure(babelifyOpts))
+	var transformer = babelify.configure({})
+
+	bify.transform(transformer)
 	    .bundle()
 	    .on('error', catchError)
 	    .pipe(source('basicContext.min.js'))
