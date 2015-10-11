@@ -1,4 +1,6 @@
-var	name       = require('./package.json').moduleName,
+'use strict'
+
+let	name       = require('./package.json').moduleName,
     fs         = require('fs'),
     gulp       = require('gulp'),
     browserify = require('browserify'),
@@ -7,14 +9,14 @@ var	name       = require('./package.json').moduleName,
     buffer     = require('vinyl-buffer'),
     plugins    = require('gulp-load-plugins')()
 
-var catchError = function(err) {
+const catchError = function(err) {
 
 	console.log(err.toString())
 	this.emit('end')
 
 }
 
-gulp.task('styles', function() {
+const styles = function() {
 
 	gulp.src('./src/styles/main.scss')
 	    .pipe(plugins.sass())
@@ -40,16 +42,16 @@ gulp.task('styles', function() {
 	    .pipe(plugins.minifyCss())
 	    .pipe(gulp.dest('./dist/addons'))
 
-})
+}
 
-gulp.task('scripts', function() {
+const scripts = function() {
 
-	var bify = browserify({
+	let bify = browserify({
 		entries    : './src/scripts/basicContext.js',
 		standalone : name
 	})
 
-	var transformer = babelify.configure({})
+	let transformer = babelify.configure({})
 
 	bify.transform(transformer)
 	    .bundle()
@@ -60,13 +62,16 @@ gulp.task('scripts', function() {
 	    .on('error', catchError)
 	    .pipe(gulp.dest('./dist'))
 
-})
+}
 
-gulp.task('default', ['styles', 'scripts'])
-
-gulp.task('watch', ['styles', 'scripts'], function() {
+const watch = function() {
 
 	gulp.watch('./src/styles/**/*.scss', ['styles'])
 	gulp.watch('./src/scripts/**/*.js', ['scripts'])
 
-})
+}
+
+gulp.task('styles', styles)
+gulp.task('scripts', scripts)
+gulp.task('default', ['styles', 'scripts'])
+gulp.task('watch', ['styles', 'scripts'], watch)
