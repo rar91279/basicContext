@@ -77,7 +77,14 @@ export default function(e, items, opts = {}) {
 
 	const isActive = function() {
 
-		return (elem.parentElement.querySelector(`.basicContext[data-id='${ id }']:hover`)==null ? false : true)
+		if (elem==null) return false
+
+		let parentElem = elem.parentElement
+
+		if (parentElem==null) return false
+		if (parentElem.querySelector(`.basicContext[data-id='${ id }']:hover`)==null) return false
+
+		return true
 
 	}
 
@@ -150,7 +157,7 @@ export default function(e, items, opts = {}) {
 
 	}
 
-	const preventDefaultEvent = function(e) {
+	const preventDefaultEvent = function(e = {}) {
 
 		if (typeof e.preventDefault === 'function')  e.preventDefault()
 		if (typeof e.stopPropagation === 'function') e.stopPropagation()
@@ -159,29 +166,35 @@ export default function(e, items, opts = {}) {
 
 	}
 
-	const close = function() {
+	const close = function(e) {
 
 		if (isVisible()===false) return false
-
-		let container = elem.parentElement
 
 		// Close child first
 		if (opts.child!=null) opts.child.close()
 
-		// Close container
+		// Remove container or context
 		if (opts.parent==null) {
 
-			container.parentElement.removeChild(container)
+			let container  = elem.parentElement,
+			    parentElem = container.parentElement
 
-		} else {
-
-			elem.parentElement.removeChild(elem)
+			if (parentElem!=null) parentElem.removeChild(container)
 
 			// Reset overflow to its original value when
 			// the current context is the only context
 			overflow.reset()
 
+		} else {
+
+			let parentElem = elem.parentElement
+
+			if (parentElem!=null) parentElem.removeChild(elem)
+
 		}
+
+		// Do not trigger default event
+		preventDefaultEvent(e)
 
 		return true
 
@@ -212,9 +225,18 @@ export default function(e, items, opts = {}) {
 
 	}
 
-	const insertIn = function(elem, html) {
+	const insert = function(html) {
+
+		let elem = null
+
+		if (opts.parent==null) elem = document.body
+		else                   elem = document.querySelector('.basicContextContainer')
+
+		if (elem==null) return false
 
 		elem.insertAdjacentHTML('beforeend', html)
+
+		return true
 
 	}
 
@@ -243,17 +265,13 @@ export default function(e, items, opts = {}) {
 	items = items.map(initItem)
 
 	// Render and add context to the body
-	if (opts.parent==null) insertIn(document.body, render())
-	else                   insertIn(document.querySelector('.basicContextContainer'), render())
+	if (insert(render())===false) return false
 
 	// Select the newly created context and cache it
 	setElem(document.querySelector(`.basicContext[data-id='${ id }']`))
 
 	// Calculate position
 	position = coordinates(e, elem)
-
-	// Show the context
-	opts.show()
 
 	// Bind events on context
 	setEvents()
@@ -267,6 +285,9 @@ export default function(e, items, opts = {}) {
 		item.setEvents()
 
 	})
+
+	// Show the context
+	opts.show()
 
 	// Call callback when a function
 	opts.callback()

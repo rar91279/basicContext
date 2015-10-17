@@ -59,7 +59,14 @@ export default function(item = {}, opts = {}) {
 
 	const isActive = function() {
 
-		return (elem.parentElement.querySelector(`.basicContext__item[data-num='${ opts.num }']:hover`)==null ? false : true)
+		if (elem==null) return false
+
+		let parentElem = elem.parentElement
+
+		if (parentElem==null) return false
+		if (parentElem.querySelector(`.basicContext__item[data-num='${ opts.num }']:hover`)==null) return false
+
+		return true
 
 	}
 
