@@ -1,8 +1,8 @@
 import * as overflow from './overflow'
 
 import coordinates from './coordinates'
+import contextItem from './item'
 
-import basicContextItem from './basicContextItem'
 import objectAssign from 'object-assign'
 
 export default function(e, items, opts = {}) {
@@ -12,7 +12,7 @@ export default function(e, items, opts = {}) {
 		let parent = exports(),
 		    opts   = { num, parent }
 
-		return basicContextItem(item, opts)
+		return contextItem(item, opts)
 
 	}
 

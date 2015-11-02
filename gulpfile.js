@@ -1,7 +1,6 @@
 'use strict'
 
 let	name       = require('./package.json').moduleName,
-    fs         = require('fs'),
     gulp       = require('gulp'),
     browserify = require('browserify'),
     babelify   = require('babelify'),
@@ -16,12 +15,34 @@ const catchError = function(err) {
 
 }
 
+const scripts = function() {
+
+	let bify = browserify({
+		entries    : './src/scripts/main.js',
+		standalone : name
+	})
+
+	let transformer = babelify.configure({
+		presets: ['es2015']
+	})
+
+	bify.transform(transformer)
+	    .bundle()
+	    .on('error', catchError)
+	    .pipe(source(name + '.min.js'))
+	    .pipe(buffer())
+	    .pipe(plugins.uglify())
+	    .on('error', catchError)
+	    .pipe(gulp.dest('./dist'))
+
+}
+
 const styles = function() {
 
 	gulp.src('./src/styles/main.scss')
 	    .pipe(plugins.sass())
 	    .on('error', catchError)
-	    .pipe(plugins.concat(name + '.min.css', { newLine: "\n" }))
+	    .pipe(plugins.rename((path) => path.basename = name + '.min'))
 	    .pipe(plugins.autoprefixer('last 2 version', '> 1%'))
 	    .pipe(plugins.minifyCss())
 	    .pipe(gulp.dest('./dist'))
@@ -29,7 +50,7 @@ const styles = function() {
 	gulp.src('./src/styles/themes/*.scss')
 	    .pipe(plugins.sass())
 	    .on('error', catchError)
-	    .pipe(plugins.rename(function(path) { path.basename += '.min' }))
+	    .pipe(plugins.rename((path) => path.basename += '.min'))
 	    .pipe(plugins.autoprefixer('last 2 version', '> 1%'))
 	    .pipe(plugins.minifyCss())
 	    .pipe(gulp.dest('./dist/themes'))
@@ -37,30 +58,10 @@ const styles = function() {
 	gulp.src('./src/styles/addons/*.scss')
 	    .pipe(plugins.sass())
 	    .on('error', catchError)
-	    .pipe(plugins.rename(function(path) { path.basename += '.min' }))
+	    .pipe(plugins.rename((path) => path.basename += '.min'))
 	    .pipe(plugins.autoprefixer('last 2 version', '> 1%'))
 	    .pipe(plugins.minifyCss())
 	    .pipe(gulp.dest('./dist/addons'))
-
-}
-
-const scripts = function() {
-
-	let bify = browserify({
-		entries    : './src/scripts/basicContext.js',
-		standalone : name
-	})
-
-	let transformer = babelify.configure({})
-
-	bify.transform(transformer)
-	    .bundle()
-	    .on('error', catchError)
-	    .pipe(source('basicContext.min.js'))
-	    .pipe(buffer())
-	    .pipe(plugins.uglify())
-	    .on('error', catchError)
-	    .pipe(gulp.dest('./dist'))
 
 }
 
@@ -74,4 +75,4 @@ const watch = function() {
 gulp.task('styles', styles)
 gulp.task('scripts', scripts)
 gulp.task('default', ['styles', 'scripts'])
-gulp.task('watch', ['styles', 'scripts'], watch)
+gulp.task('watch', ['default'], watch)
