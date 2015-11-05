@@ -1,6 +1,6 @@
 'use strict'
 
-let	name       = require('./package.json').moduleName,
+let name       = require('./package.json').moduleName,
     gulp       = require('gulp'),
     browserify = require('browserify'),
     babelify   = require('babelify'),
@@ -72,7 +72,7 @@ const watch = function() {
 
 }
 
-gulp.task('styles', styles)
 gulp.task('scripts', scripts)
-gulp.task('default', ['styles', 'scripts'])
+gulp.task('styles', styles)
+gulp.task('default', ['scripts', 'styles'])
 gulp.task('watch', ['default'], watch)
