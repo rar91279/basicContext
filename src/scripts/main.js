@@ -1,3 +1,3 @@
 import context from './context'
 
-export default context
+module.exports = context
