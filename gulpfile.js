@@ -1,67 +1,32 @@
 'use strict'
 
-let name       = require('./package.json').moduleName,
-    gulp       = require('gulp'),
-    browserify = require('browserify'),
-    babelify   = require('babelify'),
-    source     = require('vinyl-source-stream'),
-    buffer     = require('vinyl-buffer'),
-    plugins    = require('gulp-load-plugins')()
+let name  = require('./package.json').moduleName,
+    gulp  = require('gulp'),
+    tasks = require('@electerious/basictasks')(gulp, name)
 
-const catchError = function(err) {
-
-	console.log(err.toString())
-	this.emit('end')
-
-}
-
-const scripts = function() {
-
-	let bify = browserify({
-		entries    : './src/scripts/main.js',
-		standalone : name
-	})
-
-	let transformer = babelify.configure({
-		presets: ['es2015']
-	})
-
-	bify.transform(transformer)
-	    .bundle()
-	    .on('error', catchError)
-	    .pipe(source(name + '.min.js'))
-	    .pipe(buffer())
-	    .pipe(plugins.uglify())
-	    .on('error', catchError)
-	    .pipe(gulp.dest('./dist'))
-
-}
+const scripts = tasks.scripts({
+	from : './src/scripts/main.js',
+	to   : './dist'
+})
 
 const styles = function() {
 
-	gulp.src('./src/styles/main.scss')
-	    .pipe(plugins.sass())
-	    .on('error', catchError)
-	    .pipe(plugins.rename((path) => path.basename = name + '.min'))
-	    .pipe(plugins.autoprefixer('last 2 version', '> 1%'))
-	    .pipe(plugins.minifyCss())
-	    .pipe(gulp.dest('./dist'))
+	tasks.styles({
+		from : './src/styles/main.scss',
+		to   : './dist'
+	})()
 
-	gulp.src('./src/styles/themes/*.scss')
-	    .pipe(plugins.sass())
-	    .on('error', catchError)
-	    .pipe(plugins.rename((path) => path.basename += '.min'))
-	    .pipe(plugins.autoprefixer('last 2 version', '> 1%'))
-	    .pipe(plugins.minifyCss())
-	    .pipe(gulp.dest('./dist/themes'))
+	tasks.styles({
+		from : './src/styles/themes/*.scss',
+		name : (path) => path.basename += '.min',
+		to   : './dist/themes'
+	})()
 
-	gulp.src('./src/styles/addons/*.scss')
-	    .pipe(plugins.sass())
-	    .on('error', catchError)
-	    .pipe(plugins.rename((path) => path.basename += '.min'))
-	    .pipe(plugins.autoprefixer('last 2 version', '> 1%'))
-	    .pipe(plugins.minifyCss())
-	    .pipe(gulp.dest('./dist/addons'))
+	tasks.styles({
+		from : './src/styles/addons/*.scss',
+		name : (path) => path.basename += '.min',
+		to   : './dist/addons'
+	})()
 
 }
 
