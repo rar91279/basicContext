@@ -1,7 +1,7 @@
 import objectAssign from 'object-assign'
 
-const ITEM      = 'ITEM',
-      SEPARATOR = 'SEPARATOR'
+const ITEM      = 'ITEM'
+const SEPARATOR = 'SEPARATOR'
 
 export default function(item = {}, opts = {}) {
 

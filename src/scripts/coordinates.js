@@ -52,8 +52,8 @@ export default function(e = {}, elem) {
 	let normalizedPosition = getNormalizeEvent(e)
 
 	// Set the initial position
-	let x = normalizedPosition.x,
-	    y = normalizedPosition.y
+	let x = normalizedPosition.x
+	let y = normalizedPosition.y
 
 	// Get size of browser
 	let browserSize = getBrowserSize()
@@ -74,8 +74,8 @@ export default function(e = {}, elem) {
 	}
 
 	// Calculate the relative position of the mouse to the elem
-	let rx = normalizedPosition.x - x,
-	    ry = normalizedPosition.y - y
+	let rx = normalizedPosition.x - x
+	let ry = normalizedPosition.y - y
 
 	return { x, y, rx, ry }
 

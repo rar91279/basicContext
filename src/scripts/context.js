@@ -9,8 +9,8 @@ export default function(e, items, opts = {}) {
 
 	const initItem = function(item, num) {
 
-		let parent = exports(),
-		    opts   = { num, parent }
+		let parent = exports()
+		let opts   = { num, parent }
 
 		return contextItem(item, opts)
 
@@ -97,9 +97,9 @@ export default function(e, items, opts = {}) {
 
 	const showSub = function(item) {
 
-		let itemItems = item.getItems(),
-		    itemElem  = item.getElem(),
-		    itemSize  = itemElem.getBoundingClientRect()
+		let itemItems = item.getItems()
+		let itemElem  = item.getElem()
+		let itemSize  = itemElem.getBoundingClientRect()
 
 		// Don't open a new child when a child is already visible
 		if (opts.child!=null) return false
@@ -176,8 +176,8 @@ export default function(e, items, opts = {}) {
 		// Remove container or context
 		if (opts.parent==null) {
 
-			let container  = elem.parentElement,
-			    parentElem = container.parentElement
+			let container  = elem.parentElement
+			let parentElem = container.parentElement
 
 			if (parentElem!=null) parentElem.removeChild(container)
 
@@ -252,9 +252,9 @@ export default function(e, items, opts = {}) {
 
 	}
 
-	let position = null,
-	    elem     = null,
-	    id       = +new Date()
+	let position = null
+	let elem     = null
+	let id       = +new Date()
 
 	parseOpts()
 
