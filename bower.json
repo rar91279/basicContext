@@ -11,6 +11,12 @@
     "popup",
     "right-click"
   ],
+  "ignore": [
+    "**/.*",
+    "demos",
+    "gulpfile.js",
+    "package.json"
+  ],
   "license": "MIT",
   "homepage": "http://github.com/electerious/basicContext",
   "repository": {
