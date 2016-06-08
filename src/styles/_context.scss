@@ -1,4 +1,4 @@
-.basicContext {
+.basicContext{
 
 	position: absolute;
 	opacity: 0;
@@ -34,8 +34,14 @@
 
 	&__icon {
 		display: inline-block;
+		&--exp{
+			float: right;
+		}
 	}
-
+	&__title {
+		display: inline-block;
+		padding-right: .5em;
+	}
 	// Scrollable -------------------------------------------------------- //
 	&--scrollable {
 		height: 100%;
@@ -46,5 +52,21 @@
 	&--scrollable &__data {
 		min-width: 160px;
 	}
-
+}
+.basicContext__submenu{
+	position: absolute;
+	left: 100%;
+	margin-top: -1.9em;
+	margin-left: -0.4em;
+	display: none;
+	&:hover{
+		display: block;
+	}
+}
+.basicContext, .basicContext__submenu {
+	&__item:not(.basicContext__item--disabled):hover > &__data {
+		> .basicContext__submenu {
+			display: block;
+		}
+	}
 }
